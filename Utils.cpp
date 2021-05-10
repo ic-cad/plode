@@ -1,47 +1,5 @@
 #include "Utils.h"
 
-bool Utils::isBinaryOperator(std::string text){
-    if(text == "&" || text == "|" || text == "~" || text == "^" || text == "~^" || text == "^~"){
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-bool Utils::isUnaryOperator(std::string text){
-    if(text == "~"){
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-int Utils::precedence(std::string op){
-    if(op == "~"){
-        return 3;
-    }
-    else if(op == "&"){
-        return 2;
-    }
-    else if(op == "^" || op == "~^" || op == "^~"){
-        return 1;
-    }
-    else if(op == "|"){
-        return 0;
-    }
-    else{
-        return 0;
-    }
-}
-int Utils::getWireCount(std::vector<std::string> tokens){
-    int count = 0;
-    for(std::string token : tokens){
-        if(!isUnaryOperator(token) && !isBinaryOperator(token)){
-            count++;
-        }
-    }
-    return count;
-}
 
 bool Utils::validNumberString(std::string str){
 
@@ -49,7 +7,7 @@ bool Utils::validNumberString(std::string str){
     if(str.empty()){
         return false;
     }
-    for(int i = 0; i < str.length();i++){
+    for(size_t i = 0; i < str.length();i++){
         if(std::isdigit(str[i]) == 0 && str[i] != '.' && str[i] != 'e' && str[i] != '+' && str[i] != '-'){
             return false;
         }
@@ -120,7 +78,7 @@ bool Utils::isBoolValueSpiceOption(std::string str){
 }
 
 bool isStringContainsInteger(std::string str){
-    for(int i = 0 ; i < str.length(); i++){
+    for(size_t i = 0 ; i < str.length(); i++){
         if(!isdigit(str[i])){
             return false;
         }
@@ -179,7 +137,7 @@ std::vector<std::string> Utils::getLinesFromVerilogFile(std::string fileName){
 
     }
     std::cout << "*********************************" << std::endl;
-    for(auto line : lines){
+    for(const auto& line : lines){
         std::cout << line << std::endl << std::endl;
     }
     std::cout << "*********************************" << std::endl;

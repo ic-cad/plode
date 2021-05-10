@@ -20,6 +20,9 @@ MainWindow::~MainWindow()
 void MainWindow::on_browseButton_clicked()
 {
     CurrentCircuit::circ.submodules.clear();
+    CurrentCircuit::circ.callOrder.clear();
+    CurrentCircuit::circ.adjacencyList.clear();
+
     QPushButton *convertButton = findChild<QPushButton*>(QString("convertButton"));
     convertButton->setDisabled(false);
 
@@ -84,7 +87,7 @@ void MainWindow::on_convertButton_clicked()
     //To limit the height of the dropdown
     ui->outputDropdown->setStyleSheet("combobox-popup: 0;");
 
-    for(int i = 0 ; i < CurrentCircuit::circ.outputs.size() ; i++){
+    for(size_t i = 0 ; i < CurrentCircuit::circ.outputs.size() ; i++){
         ui->outputDropdown->addItem(CurrentCircuit::circ.outputs.at(i).c_str());
     }
     auto stop = std::chrono::high_resolution_clock::now();
@@ -195,7 +198,7 @@ void MainWindow::on_runSimButton_clicked()
                 std::string str = optionName + " has an invalid numeric value!";
                 QMessageBox::warning(this,"Warning!",QString(str.c_str()));
                 executeSimulation = false;
-                options.empty();
+                options.clear();
                 break;
             }
             else{
@@ -215,7 +218,7 @@ void MainWindow::on_runSimButton_clicked()
                 std::string str = optionName + " has an invalid value";
                 QMessageBox::warning(this,"Warning!",QString(str.c_str()));
                 executeSimulation = false;
-                options.empty();
+                options.clear();
                 break;
             }
             else{
@@ -283,7 +286,7 @@ void MainWindow::on_runSimButton_clicked()
 
         start = std::chrono::high_resolution_clock::now(); //For Spice simulation part
 
-        PLODELib::runSpiceSimulation(CurrentCircuit::circ.outputs, CurrentCircuit::circ.inputs,file_path,powerSimulationFile, voltageSimulationFileHeader);
+        PLODELib::runSpiceSimulation(file_path);
 
         stop = std::chrono::high_resolution_clock::now();
         diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
@@ -427,148 +430,6 @@ void MainWindow::on_spiceSubcircuiting_toggled(bool checked)
 }
 
 
-void MainWindow::createVoltageGraphs(){
-   /*std::vector<std::vector<int> > inputValues;
-
-
-    /*for(int i = 0 ; i < CurrentCircuit::circ.inputs.size(); i++){
-        std::string inputName = "circinput" + std::to_string(i);
-
-        QTextEdit *a =findChild<QTextEdit*>(QString(inputName.c_str()));
-        std::string inputLine(a->toPlainText().toUtf8().constData());
-
-        std::cout << inputName << ": " << inputLine << std::endl;
-
-        std::vector<int> inputVect;
-        for(auto c : inputLine){
-            if(c == '0'){
-                inputVect.push_back(0);
-            }
-            else if(c == '1'){
-                inputVect.push_back(1);
-            }
-        }
-
-        inputValues.push_back(inputVect);
-    }*/
- /*   std::ifstream inputFile;
-    QTextEdit * simulationInputFilePath = findChild<QTextEdit*>(QString("simulationInputFilePath"));
-    inputFile.open(simulationInputFilePath->toPlainText().toUtf8().constData());
-    std::string inputLine;
-
-    for(int i = 0 ; i < CurrentCircuit::circ.inputs.size(); i++){
-        //std::string inputName = "circinput" + std::to_string(i);
-
-        //QTextEdit *a =findChild<QTextEdit*>(QString(inputName.c_str()));
-        //std::string inputLine(a->toPlainText().toUtf8().constData());
-
-        std::vector<int> inputVect;
-
-        getline(inputFile, inputLine);
-
-        for(auto c : inputLine){
-            if(c == '0'){
-                inputVect.push_back(0);
-            }
-            else if(c == '1'){
-                inputVect.push_back(1);
-            }
-            else{
-                //inputVect.push_back(0);
-            }
-        }
-
-        inputValues.push_back(inputVect);
-    }
-
-    QTextEdit *suppvoltage = findChild<QTextEdit*>(QString("supplyvoltage"));
-    double supplyvoltage;
-    if(suppvoltage == NULL){
-        return;
-    }
-    if(suppvoltage->toPlainText().toUtf8().constData()[0] == '\0'){
-
-        supplyvoltage = 0;
-    }
-    else{
-        std::string suppVoltageString(suppvoltage->toPlainText().toUtf8().constData());
-        supplyvoltage = std::stod(suppVoltageString);
-    }
-
-    QTextEdit *time = findChild<QTextEdit*>(QString("time"));
-    std::string timeString(time->toPlainText().toUtf8().constData());
-    if(time == NULL){
-        return;
-    }
-    if(timeString[0] == '\0'){
-        return;
-    }
-    double inputChangeTime= std::stod(timeString);
-
-    std::string file_name(ui->textEdit_4->toPlainText().toUtf8().constData());
-    std::string voltage_file_name(file_name);
-    voltage_file_name = voltage_file_name.substr(0, voltage_file_name.find_last_of('.'));
-    voltage_file_name += "_";
-
-    std::cout << voltage_file_name << std::endl;
-
-    if(file_name[0] == '\0'){
-        return;
-    }
-    std::vector<QChartView *> voltageCharts;
-    int row = 0;
-    QGridLayout * outputVoltagePlotLayout = new QGridLayout;
-    for(int i = 0; i < CurrentCircuit::circ.outputs.size(); i++){
-        std::string voltage_chart_filename = voltage_file_name + CurrentCircuit::circ.outputs.at(i) + ".txt";
-        QChartView* voltage_chart = VetscoLib::createVoltageGraph(voltage_chart_filename,CurrentCircuit::circ.outputs.at(i));
-        int column = i % 2 == 0 ? 0 : 1;
-        outputVoltagePlotLayout->addWidget(voltage_chart, row, column);
-        if(i % 2 != 0){
-            row++;
-        }
-        voltageCharts.push_back(voltage_chart);
-    }
-
-    QGridLayout * gridlayout = new QGridLayout;
-    int count = 0;
-    row = 0;
-
-    file_name = ui->textEdit_4->toPlainText().toUtf8().constData();
-    voltage_file_name = file_name;
-    voltage_file_name = voltage_file_name.substr(0, voltage_file_name.find_last_of('.'));
-    voltage_file_name += "_input_";
-    for(int i = 0; i < CurrentCircuit::circ.inputs.size(); i++){
-        std::string voltage_chart_filename = voltage_file_name + CurrentCircuit::circ.inputs.at(i) + ".txt";
-
-        QChartView* voltage_chart = VetscoLib::createInputVoltageGraph(CurrentCircuit::circ.inputs.at(i), voltage_chart_filename);
-
-        int column = count % 2 == 0 ? 0 : 1;
-        gridlayout->addWidget(voltage_chart, row, column);
-        if(count % 2 != 0){
-            row++;
-        }
-        count++;
-    }
-
-
-    QHBoxLayout * layout = new QHBoxLayout;
-    layout->addLayout(gridlayout);
-    layout->addLayout(outputVoltagePlotLayout);
-
-    QDialog * dialog = new QDialog(this);
-    QDialog *existingDialog = findChild<QDialog*>(QString("voltagedialog"));
-
-    if(existingDialog){
-        delete existingDialog;
-    }
-    dialog->setObjectName(QString("voltagedialog"));
-    dialog->setLayout(layout);
-    dialog->setModal(true);
-    dialog->setMinimumSize(QSize(1680,900));
-    dialog->setWindowTitle("Voltage Simulation Results");
-*/
-}
-
 void MainWindow::on_spiceLibBrowseButton_clicked()
 {
     QFileDialog dialog(this);
@@ -702,7 +563,7 @@ void clearOptionValueArea(QComboBox * combobox){
         delete valueLabel;
     }
 }
-void MainWindow::optionValueAreaCreation(QString string){
+void MainWindow::optionValueAreaCreation(){
 
     QComboBox *combobox = qobject_cast<QComboBox *>(QObject::sender());
 

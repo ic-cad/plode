@@ -37,7 +37,7 @@ public:
 
 public slots:
     void deleteOptionButton();
-    void optionValueAreaCreation(QString str);
+    void optionValueAreaCreation();
 
 
 private slots:
@@ -54,8 +54,6 @@ private slots:
     void on_spiceSubcircuiting_toggled(bool checked);
 
     void on_graphJoining_toggled(bool checked);
-
-    void createVoltageGraphs();
 
     void on_spiceLibBrowseButton_clicked();
 

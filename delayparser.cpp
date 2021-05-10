@@ -119,11 +119,7 @@ void DelayParser::ExtractTransitionTimes(std::string fileLocation, double transi
 {
     std::ifstream instream;             //The file descriptor
     std::string nodeName;               //The name of the processed node
-    int numberOfRecords;                //The number of Spice records
     std::string str;                    //Will be iterated per line in the file
-    bool isBegun = false;               //True if the records are begun to be processed
-    int recordIterator = 0;             //Will iterate through records
-    int countTo3 = 0;                   //Counts the three lines
     std::vector<double> times;          //Holds the time per record
     std::vector<double> voltages;       //Holds the voltage per record
 
@@ -205,12 +201,12 @@ void DelayParser::FillLogicDelayMatrices()
     //The for loops below detects the delay for the ith ouput at jth transition
     //If output does not change for the current transition, the delay is set to 0.
     //It also considers the glitches
-    for(int i = 0; i < outputs; ++i)
+    for(size_t i = 0; i < outputs; ++i)
     {
         //First get the transition times for the corresponding output to a vector
         std::vector<double> transitionTimes = outputTransitionTimes[i];
         std::vector<bool> transitionValues = outputTransitionValues[i];
-        int k = 0;
+        size_t k = 0;
 
         double currentTransitionTime;
         double nextTransitionTime;
@@ -221,7 +217,7 @@ void DelayParser::FillLogicDelayMatrices()
         perOutputValues.push_back(transitionValues[0]);
 
         //For each transition compute the delay and logic value
-        for(int j = 0; j < transitions - 1; ++j)
+        for(size_t j = 0; j < transitions - 1; ++j)
         {
             currentTransitionTime = allInputTransitionTimes[j];
             nextTransitionTime = allInputTransitionTimes[j + 1];
@@ -298,7 +294,7 @@ std::vector<double> DelayParser::ReturnTransitionTimesAndValues(const std::vecto
         transitionValues.push_back((voltages[0] > transitionVoltage) ? true : false);
     }
 
-    for(int i = 0; i < records - 1; ++i)
+    for(size_t i = 0; i < records - 1; ++i)
     {
         voltageDifference1 = voltages[i] - transitionVoltage;
         voltageDifference2 = voltages[i + 1] - transitionVoltage;
@@ -351,10 +347,10 @@ void DelayParser::WriteDelayAndValuesToConsole()
     std::cout << "Delay of Each Output (Rows) at Each Transition (Columns):" << std::endl;
     std::cout.precision(17);
     //To see the delay contents for different outputs and transitions
-    for(int i = 0; i < outputs; ++i)
+    for(size_t i = 0; i < outputs; ++i)
     {
         std::cout <<outputNames[i] << ": ";
-        for(int j = 0; j < transitions; ++j)
+        for(size_t j = 0; j < transitions; ++j)
         {
             std::cout << "tr[" << j + 1 << "] = "  << std::setw(25) << delayMatrix[i][j] << "   ";
         }
@@ -366,17 +362,17 @@ void DelayParser::WriteDelayAndValuesToConsole()
     std::cout << "Logic Value of Each Output (Columns) for Each Transition (Rows):" << std::endl;
 
     //First write down output labels
-    for(int i = 0; i < outputs; ++i)
+    for(size_t i = 0; i < outputs; ++i)
     {
         std::cout << outputNames[i] << "    ";
     }
     std::cout << std::endl;
 
     //To see the logic values for different outputs and transitions
-    for(int j = 0; j < transitions + 1; ++j)
+    for(size_t j = 0; j < transitions + 1; ++j)
     {
 
-        for(int i = 0; i < outputs; ++i)
+        for(size_t i = 0; i < outputs; ++i)
         {
             std::cout << logicMatrix[i][j] << "     ";
         }
@@ -402,10 +398,10 @@ void DelayParser::WriteDelayToFile(std::string delayFileLoc, std::string delimit
     delayFile.precision(17);
 
     //To see the delay contents for different outputs and transitions
-    for(int i = 0; i < outputs; ++i)
+    for(size_t i = 0; i < outputs; ++i)
     {
         delayFile << outputNames[i] << delimiter;
-        for(int j = 0; j < transitions; ++j)
+        for(size_t j = 0; j < transitions; ++j)
         {
             if(worstDelay < delayMatrix[i][j])
             {
@@ -436,10 +432,10 @@ void DelayParser::WriteLogicToFile(std::string logicFileLoc, std::string delimit
     // Create and open a text file
     std::ofstream logicFile(logicFileLoc);
 
-    for(int j = 0; j < transitions + 1; ++j)
+    for(size_t j = 0; j < transitions + 1; ++j)
     {
 
-        for(int i = 0; i < outputs; ++i)
+        for(size_t i = 0; i < outputs; ++i)
         {
             logicFile << logicMatrix[i][j] << delimiter;
         }
@@ -458,7 +454,7 @@ void DelayParser::WriteParticularOutputToHexFile(std::string hexFileLoc, int sta
     std::size_t outputs = delayMatrix.size();
     std::size_t transitions = delayMatrix[0].size();
 
-    if(start < 0 || end > outputs - 1)
+    if(start < 0 || (size_t)end > outputs - 1)
     {
         throw("Error: The computed output indices are out of bounds...");
     }
@@ -466,7 +462,7 @@ void DelayParser::WriteParticularOutputToHexFile(std::string hexFileLoc, int sta
     // Create and open a text file
     std::ofstream hexFile(hexFileLoc);
 
-    for(int j = 0; j < transitions + 1; ++j)
+    for(size_t j = 0; j < transitions + 1; ++j)
     {
         std::string str = "";
         for(int i = start; i < end + 1; ++i)

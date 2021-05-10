@@ -27,7 +27,6 @@ SOURCES += \
     mainwindow.cpp
 
 HEADERS += \
-    ../GetDelayAllv2/GetDelayAll/DelayParser.h \
     PLODELib.h \
     Utils.h \
     circuit.h \

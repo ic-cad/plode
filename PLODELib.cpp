@@ -415,8 +415,6 @@ QChartView* PLODELib::createVoltageGraph(std::string file_name, std::string node
       //Get the records from the file. It must start with a digit
         if(line[0] >= '0' && line[0] <= '9' )
         {
-            double time;
-            double voltage;
             std::size_t spaceLoc1;
             std::size_t spaceLoc2;
 
@@ -500,7 +498,7 @@ std::string PLODELib::createFilename(std::string main_circuit_file_name){
     return file_name;
 }
 
-void PLODELib::runSpiceSimulation(std::vector<std::string> outputNodeNames, std::vector<std::string> inputNodeNames, std::string file_path, std::string power_sim_file_name, std::string voltage_sim_file_name){
+void PLODELib::runSpiceSimulation(std::string file_path){
     char cwd[1024];
     getcwd(cwd, 1024 );
     int ff, p[2];

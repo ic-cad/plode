@@ -178,11 +178,7 @@ bool Circuit::fillFromVerilogFile(std::string fileName)
                 isInputOutputOrWire[tokens.at(i)] = CircuitElementType::WIRE;
             }
         }
-        else if (tokens.front() == "assign"){
-            std::string outputNode = tokens[1];
-            tokens.erase(tokens.begin(), tokens.begin()+3);
-            evaluateDataflowModel(outputNode, tokens, isInputOutputOrWire);
-        }
+
         else if(tokens.front() == "'include"){
             std::string moduleFilename = "";
             for(size_t i = 1; i < tokens.size(); i++){
@@ -245,7 +241,7 @@ bool Circuit::fillFromVerilogFile(std::string fileName)
                     submodule.submoduleConnectionMethod = this->submoduleConnectionMethod;
 
                     submodule.fillFromVerilogFile(moduleFilename);
-                    for(auto module: submodule.submodules){
+                    for(const Circuit& module: submodule.submodules){
                         submodules.push_back(module);
                     }
                     submodules.push_back(submodule);
@@ -264,21 +260,17 @@ bool Circuit::fillFromVerilogFile(std::string fileName)
                 }
                 else{
                     CircuitElement subcircuitNode{ tokens.at(1), CircuitElementType::SUBCIRCUIT,tokens.at(0)};
-                    int startOfOutputLines = 2;
-                    size_t index;
-                    for(int i = 2; i < tokens.size(); i++){
+                    for(size_t i = 2; i < tokens.size(); i++){
                        if(std::find(submodule.inputs.begin(), submodule.inputs.end(), submodule.callOrder.at(i-2)) != submodule.inputs.end()){
-                           //inputs.push_back(tokens.at(i));
                            subcircuitNode.addToInputOrder(tokens.at(i));
                        }
                        else if(std::find(submodule.outputs.begin(), submodule.outputs.end(), submodule.callOrder.at(i-2)) != submodule.outputs.end()){
-                           //outputs.push_back(tokens.at(i));
                            subcircuitNode.addToOutputOrder(tokens.at(i));
                        }
                    }
 
 
-                    for(int i = 2; i < tokens.size(); i++){
+                    for(size_t i = 2; i < tokens.size(); i++){
                        if(std::find(submodule.inputs.begin(), submodule.inputs.end(), submodule.callOrder.at(i-2)) != submodule.inputs.end()){
                            std::string inputToken = tokens.at(i);
                            CircuitElement inputNode{ inputToken , isInputOutputOrWire[inputToken] };
@@ -299,9 +291,6 @@ bool Circuit::fillFromVerilogFile(std::string fileName)
     std::chrono::duration<double> elapsed_time = end-start;
     std::cout << circuitName << " - CONVERSION TIME : " << elapsed_time.count() << std::endl;
 
-    std::cout << "***************************" << circuitName << " - GRAPH RESULT" << "***************************" << std::endl;
-    print();
-    std::cout << "************************************************************************************************" << std::endl;
 
     return true;
 
@@ -335,123 +324,6 @@ Circuit::Circuit (const Circuit & circuit){
     circuitName = circuit.circuitName;
 }
 
-void Circuit::evaluateDataflowModel(std::string outputNode, std::vector<std::string> tokens, std::map<std::string, CircuitElementType> isInputOutputOrWire){
-    std::stack<std::string> wires;
-    std::stack<std::string> operators;
-
-    for(size_t i = 0; i < tokens.size(); i++){
-        if(tokens[i] == "("){
-            operators.push(tokens[i]);
-        }
-        else if(tokens[i] == ")"){
-            while(!operators.empty() && operators.top() != "("){
-                std::string input_wire2 = wires.top();
-                wires.pop();
-
-                std::string input_wire1 = wires.top();
-                wires.pop();
-
-
-                std::string temp_wire_name = "PLODE_GEN_TEMP_WIRE_" + std::to_string(gen_temp_wire_count);
-                std::string temp_gate_name = "PLODE_GEN_TEMP_GATE_" + std::to_string(gen_temp_gate_count);
-
-                CircuitElement gateNode{ temp_gate_name, mapOfNodeTypes[operators.top()]};
-                operators.pop();
-
-                CircuitElement outputWireNode{ temp_wire_name, CircuitElementType::WIRE};
-                addEdge(gateNode, outputWireNode);
-                isInputOutputOrWire[temp_wire_name] = CircuitElementType::WIRE;
-                gen_temp_gate_count++;
-                gen_temp_wire_count++;
-
-                CircuitElement inputWireNode1{ input_wire1 , isInputOutputOrWire[input_wire1] };
-                CircuitElement inputWireNode2{ input_wire2 , isInputOutputOrWire[input_wire2] };
-
-                addEdge(inputWireNode1, gateNode);
-                addEdge(inputWireNode2, gateNode);
-
-                wires.push(temp_wire_name);
-            }
-            if(!operators.empty()){
-                operators.pop();
-            }
-        }
-        else if(Utils::isBinaryOperator(tokens[i]) || Utils::isUnaryOperator(tokens[i])){
-            while(!operators.empty() && Utils::precedence(operators.top()) >= Utils::precedence(tokens[i])){
-                std::string input_wire2 = wires.top();
-                wires.pop();
-                std::string input_wire1 = wires.top();
-                wires.pop();
-
-                std::string temp_wire_name = "PLODE_GEN_TEMP_WIRE_" + std::to_string(gen_temp_wire_count);
-                std::string temp_gate_name = "PLODE_GEN_TEMP_GATE_" + std::to_string(gen_temp_gate_count);
-
-                CircuitElement gateNode{ temp_gate_name, mapOfNodeTypes[operators.top()]};
-                operators.pop();
-
-                CircuitElement outputWireNode{ temp_wire_name, CircuitElementType::WIRE };
-                addEdge(gateNode, outputWireNode);
-                isInputOutputOrWire[temp_wire_name] = CircuitElementType::WIRE;
-                gen_temp_gate_count++;
-                gen_temp_wire_count++;
-
-                CircuitElement inputWireNode1{ input_wire1 , isInputOutputOrWire[input_wire1] };
-                CircuitElement inputWireNode2{ input_wire2 , isInputOutputOrWire[input_wire2] };
-
-                addEdge(inputWireNode1, gateNode);
-                addEdge(inputWireNode2, gateNode);
-
-                wires.push(temp_wire_name);
-
-            }
-            operators.push(tokens[i]);
-
-        }
-        else{
-            wires.push(tokens[i]);
-        }
-
-    }
-    //If wire count is 2 and operator count is 1
-    while(!operators.empty()){
-        std::string input_wire2 = wires.top();
-        wires.pop();
-
-        std::string input_wire1 = wires.top();
-        wires.pop();
-
-
-        std::string temp_wire_name = "PLODE_GEN_TEMP_WIRE_" + std::to_string(gen_temp_wire_count);
-        std::string temp_gate_name = "PLODE_GEN_TEMP_GATE_" + std::to_string(gen_temp_gate_count);
-
-
-
-        CircuitElement gateNode{ temp_gate_name, mapOfNodeTypes[operators.top()]};
-        operators.pop();
-
-        if(wires.empty()){
-            CircuitElement outputWireNode{outputNode, CircuitElementType::WIRE };
-            addEdge(gateNode, outputWireNode);
-
-        }
-        else{
-            CircuitElement outputWireNode{temp_wire_name, CircuitElementType::WIRE };
-            addEdge(gateNode, outputWireNode);
-            isInputOutputOrWire[temp_wire_name] = CircuitElementType::WIRE;
-            gen_temp_wire_count++;
-        }
-
-        gen_temp_gate_count++;
-
-        CircuitElement inputWireNode1{ input_wire1 , isInputOutputOrWire[input_wire1] };
-        CircuitElement inputWireNode2{ input_wire2 , isInputOutputOrWire[input_wire2] };
-
-        addEdge(inputWireNode1, gateNode);
-        addEdge(inputWireNode2, gateNode);
-
-        wires.push(temp_wire_name);
-    }
-}
 
 bool Circuit::doesElementWithNameExist(std::string name) {
     for(auto & mainCircuitElement : adjacencyList){

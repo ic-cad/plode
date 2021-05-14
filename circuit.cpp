@@ -139,8 +139,8 @@ bool Circuit::fillFromVerilogFile(std::string fileName)
             continue;
         }
 
-        line.erase(std::remove_if(line.begin(), line.end(), [](char chr) { return chr == ' (' || chr == ' )' || chr == ';'; }), line.end());
-
+        //line.erase(std::remove_if(line.begin(), line.end(), [](char chr) { return chr == ' (' || chr == ' )' || chr == ';'; }), line.end());
+        std::replace(line.begin(), line.end(), ';', ' ');
         std::replace(line.begin(), line.end(), ',', ' ');
         std::replace(line.begin(), line.end(), '(', ' ');
         std::replace(line.begin(), line.end(), ')', ' ');

@@ -64,8 +64,6 @@ void MainWindow::on_convertButton_clicked()
 
     }
     else{
-
-
         std::cout << "FILE NAME:" << ui->textEdit->toPlainText().toUtf8().constData() << std::endl;
         CurrentCircuit::circ.fillFromVerilogFile(ui->textEdit->toPlainText().toUtf8().constData());
         char buffer[256];

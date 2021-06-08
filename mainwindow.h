@@ -2,10 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "ui_mainwindow.h"
-#include "circuit.h"
-#include "currentcircuit.h"
-#include "PLODELib.h"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QLabel>
@@ -22,6 +18,11 @@
 #include <chrono>
 #include <QSound>
 #include <algorithm>
+#include "ui_mainwindow.h"
+#include "circuit.h"
+#include "currentcircuit.h"
+#include "PLODELib.h"
+#include "singlepath.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -74,6 +75,14 @@ private slots:
     void on_logicResultFileOpen_clicked();
 
     void on_textEdit_textChanged();
+
+    void on_generateButton_clicked();
+
+    void on_actionExit_triggered();
+
+    void on_savePathVerilogButton_clicked();
+
+    void on_openVerilog_clicked();
 
 private:
     Ui::MainWindow *ui;

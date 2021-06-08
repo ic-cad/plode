@@ -26,7 +26,6 @@ void DelayParser::CombineInputTransitionTimes(double transitionInterval)
     //The repetitions will be canceled next
     std::vector<double> allTransitions;
 
-
     for(std::size_t i = 0; i < inputs; ++i)
     {
         allTransitions.insert(allTransitions.end(), inputTransitionTimes[i].begin(), inputTransitionTimes[i].end());
@@ -101,7 +100,6 @@ int DelayParser::CompareActualWithExpected(std::string actualFile, std::string e
             errors++;
         }
 
-
     }
 
     inActual.close();
@@ -146,7 +144,7 @@ void DelayParser::ExtractTransitionTimes(std::string fileLocation, double transi
     {
         //Get the records from the file. It must start with a digit
         if(str[0] >= '0' && str[0] <= '9' )
-        {            
+        {
             double time;
             double voltage;
             std::size_t spaceLoc1;
@@ -214,7 +212,7 @@ void DelayParser::FillLogicDelayMatrices()
         std::vector<bool> perOutputValues;
 
         //Add the first logic value corresponding to first input before transitions
-        perOutputValues.push_back(transitionValues[0]);
+        //perOutputValues.push_back(transitionValues[0]);
 
         //For each transition compute the delay and logic value
         for(size_t j = 0; j < transitions - 1; ++j)
@@ -232,16 +230,18 @@ void DelayParser::FillLogicDelayMatrices()
             //then there is no transition at the output for this input transition
             //then set logic-value to the very first value of that output and
             //set the delşay to 0
+            //ICCD
+            /*
             if(k == 0)
             {
                 perOutputValues.push_back(transitionValues[0]);
                 perOutputDelays.push_back(0);
             }
-            else
-            {
+            else*/
+            //{
                 //The logic value of the output belongs to the last transition prior to kth
-                //Instead of k - 1 k is used as index because the first value in transitionValues array is first value of the output
-                perOutputValues.push_back(transitionValues[k]);
+                //(Changed for ICCD) Instead of k - 1 k is used as index because the first value in transitionValues array is first value of the output
+                perOutputValues.push_back(transitionValues[k - 1]);
 
                 if(transitionTimes[k - 1] < nextTransitionTime && transitionTimes[k - 1] > currentTransitionTime)
                 {
@@ -251,7 +251,7 @@ void DelayParser::FillLogicDelayMatrices()
                 {
                     perOutputDelays.push_back(0);
                 }
-            }
+            //}
         }
 
 
@@ -293,6 +293,10 @@ std::vector<double> DelayParser::ReturnTransitionTimesAndValues(const std::vecto
     {
         transitionValues.push_back((voltages[0] > transitionVoltage) ? true : false);
     }
+
+    //ICCD
+    //First transition is time 0.
+    transitionTimes.push_back(0);
 
     for(size_t i = 0; i < records - 1; ++i)
     {
@@ -420,7 +424,6 @@ void DelayParser::WriteDelayToFile(std::string delayFileLoc, std::string delimit
     delayFile.close();
     std::cout << "Info: Delay data for each output and each transition is written to " << delayFileLoc << std::endl;
 
-
 }
 
 void DelayParser::WriteLogicToFile(std::string logicFileLoc, std::string delimiter)
@@ -432,7 +435,7 @@ void DelayParser::WriteLogicToFile(std::string logicFileLoc, std::string delimit
     // Create and open a text file
     std::ofstream logicFile(logicFileLoc);
 
-    for(size_t j = 0; j < transitions + 1; ++j)
+    for(size_t j = 0; j < transitions; ++j) //ICCD
     {
 
         for(size_t i = 0; i < outputs; ++i)

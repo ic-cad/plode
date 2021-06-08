@@ -41,6 +41,9 @@ void MainWindow::on_browseButton_clicked()
 
 void MainWindow::on_convertButton_clicked()
 {
+    QPushButton *convertButton = findChild<QPushButton*>(QString("convertButton"));
+    convertButton->setDisabled(true);
+
     auto start = std::chrono::high_resolution_clock::now();
     QRadioButton *graphJoiningMethod = findChild<QRadioButton*>(QString("graphJoining"));
     graphJoiningMethod->setDisabled(true);
@@ -57,8 +60,12 @@ void MainWindow::on_convertButton_clicked()
         std::cout << "File path is empty" << std::endl;
         QMessageBox::warning(this,"Warning!","A Verilog file must be selected");
         //return;
+        convertButton->setDisabled(false);
+
     }
     else{
+
+
         std::cout << "FILE NAME:" << ui->textEdit->toPlainText().toUtf8().constData() << std::endl;
         CurrentCircuit::circ.fillFromVerilogFile(ui->textEdit->toPlainText().toUtf8().constData());
         char buffer[256];
@@ -73,10 +80,10 @@ void MainWindow::on_convertButton_clicked()
         if(libraryPath.empty()){
             std::cout << "LibraryPath is empty" << std::endl;
             QMessageBox::warning(this,"Warning!","Spice library folder must be selected");
+            convertButton->setDisabled(false);
+
         }
         else{
-            QPushButton *convertButton = findChild<QPushButton*>(QString("convertButton"));
-            convertButton->setDisabled(true);
 
             ui->textEdit_2->setText(QString::fromStdString(dirname + "/" + PLODELib::convertFromVerilogToSpice(CurrentCircuit::circ,libraryPath)));
 
@@ -245,8 +252,18 @@ void MainWindow::on_runSimButton_clicked()
     }
 
     if(executeSimulation){
+        std::string clockPeriod = findChild<QTextEdit*>(QString("clockPeriodTextEdit"))->toPlainText().toUtf8().constData();
+        double clockPeriodVal;
+        std::string clockName = findChild<QTextEdit*>(QString("clockNameTextEdit"))->toPlainText().toUtf8().constData();
 
-        std::string newFilePath = PLODELib::addSimulationParameters(CurrentCircuit::circ,inputValues,inputChangeTime,supplyvoltage,options);
+        if(clockPeriod[0] == '\0'){
+            clockPeriodVal = 0;
+        }
+        else{
+            clockPeriodVal = std::stod(clockPeriod);
+        }
+
+        std::string newFilePath = PLODELib::addSimulationParameters(CurrentCircuit::circ,inputValues,inputChangeTime,supplyvoltage,options, clockPeriodVal, clockName);
         ui->textEdit_2->setText(newFilePath.c_str());
 
         std::string file_path(ui->textEdit_2->toPlainText().toUtf8());
@@ -310,7 +327,7 @@ void MainWindow::on_runSimButton_clicked()
         start = std::chrono::high_resolution_clock::now();//For analysis part
 
         //TODO: Change this into a different button later on
-        PLODELib::generateLogicAndDelayResults(CurrentCircuit::circ, supplyvoltage, inputChangeTime, voltageSimulationFileHeader);
+        PLODELib::generateLogicAndDelayResults(CurrentCircuit::circ, supplyvoltage, inputChangeTime, voltageSimulationFileHeader, clockName);
 
         int posStart = voltageSimulationFileHeader.find(CurrentCircuit::circ.circuitName + "_");
         int posEnd = voltageSimulationFileHeader.find("_voltagesimulation");
@@ -660,9 +677,9 @@ void MainWindow::on_compareResultsButton_clicked()
 
     ui->wrongResultValue->setText(std::to_string(wrongValues).c_str());
     ui->wrongResultValue->setReadOnly(true);
-    ui->correctResultValue->setText(std::to_string(PLODELib::getDelayParser().GetAllInputTransitionTimes().size() - wrongValues).c_str());
+    ui->correctResultValue->setText(std::to_string(PLODELib::getDelayParser().GetAllInputTransitionTimes().size() - 1 - wrongValues).c_str());
     ui->correctResultValue->setReadOnly(true);
-    ui->totalResultValue->setText(std::to_string(PLODELib::getDelayParser().GetAllInputTransitionTimes().size()).c_str());
+    ui->totalResultValue->setText(std::to_string(PLODELib::getDelayParser().GetAllInputTransitionTimes().size() - 1).c_str());
     ui->totalResultValue->setReadOnly(true);
 
     ui->resultDifferenceFilePath->setText(comparisonResultFilePath.c_str());
@@ -700,4 +717,66 @@ void MainWindow::on_logicResultFileOpen_clicked()
 void MainWindow::on_textEdit_textChanged()
 {
     ui->outputDropdown->clear();
+}
+
+void MainWindow::on_generateButton_clicked()
+{
+    QFileDialog dialog(this);
+
+    QString fileName = dialog.getSaveFileName(this,
+            tr("Save Output Hex File"), "",
+            tr("Output Hex File (*.txt);;All Files (*)"));
+
+    if(fileName.isEmpty()){
+        std::cout << "Error: No file name is given." << std::endl;
+        fileName = "./OutputHex.txt";
+    }
+
+    int startBit = ui->startBit->toPlainText().toInt();
+    int stopBit = ui->stopBit->toPlainText().toInt();
+
+    PLODELib::getDelayParser().WriteParticularOutputToHexFile(fileName.toStdString(), startBit, stopBit);
+
+}
+
+void MainWindow::on_actionExit_triggered()
+{
+    QApplication::quit();
+}
+
+
+void MainWindow::on_savePathVerilogButton_clicked()
+{
+    std::string pathStr = ui->pathText->toPlainText().toStdString();
+    std::istringstream stm(pathStr);
+    std::string word;
+    std::vector<std::string> pathNodes;
+
+    while (stm >> word)
+    {
+        pathNodes.push_back(word);
+    }
+
+    QFileDialog dialog(this);
+
+    QString fileName = dialog.getSaveFileName(this,
+            tr("Save Path Verilog File"), "",
+            tr("Path Verilog File (*.v);;All Files (*)"));
+
+    if(fileName.isEmpty()){
+        throw std::invalid_argument("Error: No file name is given to save path verilog.");
+    }
+
+    SinglePath sPath(pathNodes);
+    sPath.ConvertToSinglePathVerilog(ui->sourceVerilog->toPlainText().toUtf8().constData(),fileName.toStdString());
+
+}
+
+void MainWindow::on_openVerilog_clicked()
+{
+    QString file_name = QFileDialog::getOpenFileName(this,"Choose file","C://","Verilog files (*.v)");
+
+    if(!file_name.isEmpty()){
+        ui->sourceVerilog->setText(file_name);
+    }
 }

@@ -1,4 +1,4 @@
-#include "PLODELib.h"
+﻿#include "PLODELib.h"
 
 int andcount = 0;
 int orcount = 0;
@@ -9,6 +9,8 @@ int xnorcount = 0;
 int notcount = 0;
 int bufcount = 0;
 int oaicount = 0;
+int dffcount = 0;
+
 int subcircuitCount = 0;
 double PLODELib::simulationDuration = 0;
 double PLODELib::totalSimulationTime = 0;
@@ -244,6 +246,16 @@ void convertContents(Circuit & circuit, std::string filename, bool isSubcircuit)
                             break;
                         default:
                             break;
+                    }
+                }
+                else if(adj.first.elementType == CircuitElementType::DFF){
+                    std::string dffname = "Xdff" + std::to_string(dffcount);
+                    dffcount++;
+                    if(!isSubcircuit){
+                        conversionFile << dffname << " " << inputs.at(0).elementName << " " << outputsString << inputs.at(1).elementName << " Vcc gnd DFF_X2" << std::endl;
+                    }
+                    else{
+                        conversionFile << dffname << " " << outputsString << inputsString << "Vcc Vss dff_x2" << std::endl;
                     }
                 }
                 else if(adj.first.elementType == CircuitElementType::SUBCIRCUIT){
@@ -541,8 +553,13 @@ void PLODELib::runSpiceSimulation(std::string file_path){
 }
 
 std::string PLODELib::addSimulationParameters(Circuit circuit, std::vector<std::vector<int> > inputValues,
-                                               double inputChangeTime, double supplyvoltage,
-                                               std::vector<std::pair<std::string,std::string>> options){
+                                               double inputChangeTime,
+                                               double supplyvoltage,
+                                               std::vector<std::pair<std::string,std::string>> options,
+                                               double clockPeriod,
+                                               std::string clockName){
+
+    std::cout << "CLOCK NAME:" << clockName << " CLOCK PERIOD:" << clockPeriod << std::endl;
     // To avoid comma or dot confusion when writing floating point numbers,
     // we set an ngspice compatible locale here.
     std::setlocale(LC_NUMERIC, "en_US.UTF-8");
@@ -584,21 +601,42 @@ std::string PLODELib::addSimulationParameters(Circuit circuit, std::vector<std::
         }
         else
         {
-            std::string inputString = "Vp"+std::to_string(count)+" "+circuit.inputs.at(i) + " 0 0 PWL(";
-            double timeval = 0;
-            for(auto in : inValues){
-                inputString += std::to_string(timeval) + "N " + std::to_string(in*supplyvoltage) + "V ";
-                timeval += inputChangeTime;
-                timeval-=0.01;
-                inputString += std::to_string(timeval) + "N " + std::to_string(in*supplyvoltage) + "V ";
-                timeval+=0.01;
+            if(circuit.inputs.at(i) == clockName){
+                std::string inputString = "Vp"+std::to_string(count)+" "+ clockName + " 0 0 PWL(";
+                int clockChangeCount = inputChangeTime*inputValues.at(0).size() / (clockPeriod/2);
+                double timeval = 0;
+
+                for(int i = 0; i < clockChangeCount; i++){
+
+                    inputString += std::to_string(timeval) + "N " + std::to_string(((i+1)%2!=0)*supplyvoltage) + "V ";
+                    timeval += clockPeriod/2;
+                    timeval-=0.01;
+                    inputString += std::to_string(timeval) + "N " + std::to_string(((i+1)%2!=0)*supplyvoltage) + "V ";
+                    timeval+=0.01;
+                }
+                inputString +=")";
+                conversionFile << inputString << std::endl;
+                count++;
             }
-            inputString +=")";
-            conversionFile << inputString << std::endl;
-            count++;
+            else{
+                std::string inputString = "Vp"+std::to_string(count)+" "+circuit.inputs.at(i) + " 0 0 PWL(";
+                double timeval = 0;
+                for(auto in : inValues){
+                    inputString += std::to_string(timeval) + "N " + std::to_string(in*supplyvoltage) + "V ";
+                    timeval += inputChangeTime;
+                    timeval-=0.01;
+                    inputString += std::to_string(timeval) + "N " + std::to_string(in*supplyvoltage) + "V ";
+                    timeval+=0.01;
+                }
+                inputString +=")";
+                conversionFile << inputString << std::endl;
+                count++;
+            }
+
         }
 
     }
+
     simulationDuration = inputChangeTime*inputValues.at(0).size();
     totalSimulationTime = inputChangeTime*inputValues.at(0).size();
 
@@ -645,7 +683,11 @@ std::string PLODELib::addSimulationParameters(Circuit circuit, std::vector<std::
         std::string voltage_node = "V(" + outputNodeNames.at(i) + ")";
         strcat(msg5,voltage_node.c_str());
         strcat(msg4,voltage_node.c_str());
-        strcat(msg4,(" > " + voltage_sim_file_name + "_" + outputNodeNames.at(i) + ".txt ").c_str());
+
+        std::string outputNodeName = outputNodeNames.at(i);
+        std::transform(outputNodeName.begin(), outputNodeName.end(), outputNodeName.begin(), ::tolower);
+
+        strcat(msg4,(" > " + voltage_sim_file_name + "_" + outputNodeName + ".txt ").c_str());
         strcat(msg5,"\n");
         strcat(msg4,"\n");
         conversionFile << msg5;
@@ -661,7 +703,11 @@ std::string PLODELib::addSimulationParameters(Circuit circuit, std::vector<std::
         std::string voltage_node = "V(" + inputNodeNames.at(i) + ")";
         strcat(msg5,voltage_node.c_str());
         strcat(msg4,voltage_node.c_str());
-        strcat(msg4,(" > " + voltage_sim_file_name + "_input_" + inputNodeNames.at(i) + ".txt ").c_str());
+
+        std::string inputNodeName = inputNodeNames.at(i);
+        std::transform(inputNodeName.begin(), inputNodeName.end(), inputNodeName.begin(), ::tolower);
+
+        strcat(msg4,(" > " + voltage_sim_file_name + "_input_" + inputNodeName + ".txt ").c_str());
         strcat(msg5,"\n");
         strcat(msg4,"\n");
         conversionFile << msg5;
@@ -678,20 +724,19 @@ std::string PLODELib::addSimulationParameters(Circuit circuit, std::vector<std::
     return new_file_name;
 }
 
-void PLODELib::generateLogicAndDelayResults(Circuit circuit, double supplyVoltage, double inputChangeTime, std::string voltageSimulationFileHeader){
+void PLODELib::generateLogicAndDelayResults(Circuit circuit, double supplyVoltage, double inputChangeTime, std::string voltageSimulationFileHeader, std::string clockName){
     std::string voltageFileName;
     //DelayParser dp = getDelayParser();
 
-    std::transform(circuit.inputs[0].begin(), circuit.inputs[0].end(), circuit.inputs[0].begin(), ::tolower);
-
     delayParser.ClearThemAll();
 
-    delayParser.ExtractTransitionTimes(voltageSimulationFileHeader + "_input_" + circuit.inputs[0] + "" + ".txt", supplyVoltage/2,true);
 
     for(std::size_t i = 0; i < circuit.inputs.size(); i++){
-        std::transform(circuit.inputs.at(i).begin(), circuit.inputs.at(i).end(), circuit.inputs.at(i).begin(), ::tolower);
-        voltageFileName = voltageSimulationFileHeader + "_input_" + circuit.inputs.at(i) + ".txt";
-        delayParser.ExtractTransitionTimes(voltageFileName,supplyVoltage/2.0, true);
+        if(circuit.inputs.at(i) != clockName){
+            std::transform(circuit.inputs.at(i).begin(), circuit.inputs.at(i).end(), circuit.inputs.at(i).begin(), ::tolower);
+            voltageFileName = voltageSimulationFileHeader + "_input_" + circuit.inputs.at(i) + ".txt";
+            delayParser.ExtractTransitionTimes(voltageFileName,supplyVoltage/2.0, true);
+        }
     }
 
     delayParser.CombineInputTransitionTimes(inputChangeTime*1e-9);
@@ -776,7 +821,7 @@ QChartView * PLODELib::createDelayGraph(std::string file_name, std::string noden
             maxDelay = std::stod(token) * 1e9;
         }
         line.erase(0, pos + 1);
-        QString qstr = QString::fromStdString("Tr" + std::to_string(count));
+        QString qstr = QString::fromStdString("Tr" + std::to_string(count-1)); //ICCD
         categories << qstr;
         count++;
 

@@ -24,7 +24,9 @@ SOURCES += \
     currentcircuit.cpp \
     delayparser.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    singlepath.cpp \
+    variationmodel.cpp
 
 HEADERS += \
     PLODELib.h \
@@ -33,7 +35,9 @@ HEADERS += \
     circuitelement.h \
     currentcircuit.h \
     delayparser.h \
-    mainwindow.h
+    mainwindow.h \
+    singlepath.h \
+    variationmodel.h
 
 FORMS += \
     mainwindow.ui

@@ -43,7 +43,8 @@ public:
     static void runSpiceSimulation(std::string file_path);
 
     //Adds .option .control and input lines to the converted Spice file
-    static std::string addSimulationParameters(Circuit circuit, std::vector<std::vector<int> > inputValues, double inputChangeTime, double supplyvoltage, std::vector<std::pair<std::string,std::string> > options);
+    static std::string addSimulationParameters(Circuit circuit, std::vector<std::vector<int> > inputValues, double inputChangeTime, double supplyvoltage, std::vector<std::pair<std::string,std::string> > options,  double clockPeriod,
+                                               std::string clockName);
 
     //Getter for delay parser
     static DelayParser getDelayParser() { return delayParser; }
@@ -55,7 +56,7 @@ public:
     static void addSubcircuitsToSpiceFile(Circuit & circuit, std::string filename);
 
     //Generates logic and delay results using the delay parser of PLODE
-    static void generateLogicAndDelayResults(Circuit circuit, double supplyVoltage, double inputChangeTime, std::string voltageSimulationFileHeader);
+    static void generateLogicAndDelayResults(Circuit circuit, double supplyVoltage, double inputChangeTime, std::string voltageSimulationFileHeader, std::string clockName);
 
     //Total gate and subcircuit counts for naming the gate calls in the Spice
     static int andcount;
@@ -67,6 +68,7 @@ public:
     static int notcount;
     static int bufcount;
     static int oaicount;
+    static int dffcount;
     static int subcircuitCount;
 
     //Holds the spice simulation duration

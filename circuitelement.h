@@ -19,7 +19,8 @@ enum CircuitElementType {
     WIRE,
     OAI3,
     BUF,
-    SUBCIRCUIT
+    SUBCIRCUIT,
+    DFF
 };
 
 //This class represents a circuit element in a circuit

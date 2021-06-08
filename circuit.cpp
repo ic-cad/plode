@@ -139,8 +139,8 @@ bool Circuit::fillFromVerilogFile(std::string fileName)
             continue;
         }
 
-        //line.erase(std::remove_if(line.begin(), line.end(), [](char chr) { return chr == ' (' || chr == ' )' || chr == ';'; }), line.end());
-        std::replace(line.begin(), line.end(), ';', ' ');
+        line.erase(std::remove_if(line.begin(), line.end(), [](char chr) { return chr == ' (' || chr == ' )' || chr == ';'; }), line.end());
+
         std::replace(line.begin(), line.end(), ',', ' ');
         std::replace(line.begin(), line.end(), '(', ' ');
         std::replace(line.begin(), line.end(), ')', ' ');
@@ -152,6 +152,7 @@ bool Circuit::fillFromVerilogFile(std::string fileName)
         while (stm >> word) {
             tokens.push_back(word);
         }
+
         if (tokens.front() == "module") {
             circuitName = tokens.at(1);
             for(size_t i = 2; i < tokens.size(); i++){
@@ -201,10 +202,23 @@ bool Circuit::fillFromVerilogFile(std::string fileName)
             submodules.push_back(submodule);
 
         }
+        else if(tokens.front() == "dff"){
+            CircuitElement gateNode{ tokens.at(1), CircuitElementType::DFF};
+            CircuitElement outputNode{ tokens.at(3), isInputOutputOrWire[tokens.at(3)] };
+            addEdge(gateNode, outputNode);
 
+            for (size_t i = 2; i < 5; i+=2) {
+                CircuitElement inputNode{ tokens.at(i) , isInputOutputOrWire[tokens.at(i)] };
+                addEdge(inputNode, gateNode);
+            }
+        }
         else if (mapOfNodeTypes.find(tokens.front()) != mapOfNodeTypes.end()) {
             CircuitElement gateNode{ tokens.at(1), mapOfNodeTypes[tokens.front()]};
 
+            //This might not be the case for all the cell libraries, the gate submodules might have different input/output ordering
+            //such as the case in the dff. A way to understand has to be added.
+            //Also we are getting a cell library but we do not actually understand the contents of it, we just think it is like the Lib45NanGate
+            //library which is also a problem. We need to find a way to fix that
             CircuitElement outputNode{ tokens.at(2), isInputOutputOrWire[tokens.at(2)] };
             addEdge(gateNode, outputNode);
 

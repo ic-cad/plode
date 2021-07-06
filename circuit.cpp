@@ -21,9 +21,9 @@ void Circuit::addEdge(CircuitElement & element1, CircuitElement & element2)
 
     for (size_t i = 0; i < adjacencyList.size(); i++) {
         if (adjacencyList[i].first == element1) {
-            if(std::find(adjacencyList[i].second.begin(), adjacencyList[i].second.end(), element2) == adjacencyList[i].second.end()) {
+            //if(std::find(adjacencyList[i].second.begin(), adjacencyList[i].second.end(), element2) == adjacencyList[i].second.end()) {
                 adjacencyList[i].second.push_back(element2);
-            }
+            //}
         }
     }
 }

@@ -255,7 +255,7 @@ void convertContents(Circuit & circuit, std::string filename, bool isSubcircuit)
                         conversionFile << dffname << " " << inputs.at(0).elementName << " " << outputsString << inputs.at(1).elementName << " Vcc gnd DFF_X2" << std::endl;
                     }
                     else{
-                        conversionFile << dffname << " " << outputsString << inputsString << "Vcc Vss dff_x2" << std::endl;
+                        conversionFile << dffname << " " << outputsString << inputsString << "Vcc Vss DFF_X2" << std::endl;
                     }
                 }
                 else if(adj.first.elementType == CircuitElementType::SUBCIRCUIT){

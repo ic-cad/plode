@@ -53,7 +53,7 @@ void DelayParser::CombineInputTransitionTimes(double transitionInterval)
 }
 
 
-int DelayParser::CompareActualWithExpected(std::string actualFile, std::string expectedFile, std::string resultFile)
+std::vector<int> DelayParser::CompareActualWithExpected(std::string actualFile, std::string expectedFile, std::string resultFile)
 {
     std::ifstream inActual;
     std::ifstream inExpected;
@@ -81,26 +81,55 @@ int DelayParser::CompareActualWithExpected(std::string actualFile, std::string e
 
      //Read until the end of file
     int count = 0;
+    int totalBitCount = 0;
+    int totalWrongBitCount = 0;
 
     while(std::getline(inActual, strActual))
     {
+        std::vector<int> wrongBits;
         std::getline(inExpected, strExpected);
         count++;
         //Windows type file
         strActual.erase(std::remove_if(strActual.begin(), strActual.end(), [](char chr) { return chr == '\r'; }), strActual.end());
         strExpected.erase(std::remove_if(strExpected.begin(), strExpected.end(), [](char chr) { return chr == '\r'; }), strExpected.end());
 
-        if(strActual != strExpected)
+        if(strExpected.size() != strActual.size())
         {
-            outResult << std::setw(10) << "Line: " << count  << std::endl;
+            throw std::invalid_argument("The number of outputs mismatch between the expected and actual output file.");
+        }
+
+        totalBitCount += strExpected.size();
+
+        for(std::size_t i = 0; i < strExpected.size(); ++i)
+        {
+            if(strActual[i] != strExpected[i] && (strExpected[i] != 'x' && strExpected[i] != 'X'))
+            {
+                totalWrongBitCount++;
+                wrongBits.push_back(strExpected.size() - i - 1);
+            }
+        }
+
+        if(wrongBits.size() != 0)
+        {
+            outResult << std::setw(10) << "Input Vector Index: " << count  << std::endl;
             outResult << std::setw(10) << "Result: " << strActual << std::endl;
             outResult << std::setw(10) << "Expected: " << strExpected << std::endl;
-            outResult << std::endl;
+            outResult << std::setw(10) << "Wrong Bit Indices: ";
+
+            for(auto& a : wrongBits)
+            {
+               outResult << a << " ";
+            }
+
+            outResult << std::endl << std::endl;
 
             errors++;
         }
 
     }
+    outResult << std::setw(10) << "There are total " << totalBitCount << " outputs" << std::endl;
+    outResult << std::setw(10) << "Among  them " << totalWrongBitCount << " outputs are wrong" << std::endl;
+    outResult << std::setw(10) << "Accuracy Percentage = %" << 100 * ((totalBitCount - totalWrongBitCount)/(float)totalBitCount) << std::endl;
 
     inActual.close();
     inExpected.close();
@@ -109,7 +138,11 @@ int DelayParser::CompareActualWithExpected(std::string actualFile, std::string e
     std::cout << "Info: Actual output is compared with the expected output." << std::endl;
     std::cout << "Info: There are " << errors << " differences written to " << resultFile << std::endl;
 
-    return errors;
+    std::vector<int> returnVec;
+    returnVec.push_back(count);
+    returnVec.push_back(errors);
+
+    return returnVec;
 }
 
 

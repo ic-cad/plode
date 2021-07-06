@@ -191,7 +191,7 @@ int SinglePath::ConvertToSinglePathVerilog(std::string inputVerilogLoc, std::str
                         else if(i == pathGates.size() - 1)
                         {
                             std::string sideinput;
-                            if(gate == "AND" || gate == "NAND" || gate == "XNOR" || gate == "XOR")
+                            if(gate == "AND" || gate == "NAND")
                             {
                                 sideinput = "Vcc";
                             }

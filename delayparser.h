@@ -54,7 +54,7 @@ class DelayParser{
         //Compare two text files containing the output vectors for each transition
         //List down the different vectors than expected on a separate file
         //Returns number of mismatchs (errors)
-        static int CompareActualWithExpected(std::string actualFile, std::string expectedFile, std::string resultFile);
+        static std::vector<int> CompareActualWithExpected(std::string actualFile, std::string expectedFile, std::string resultFile);
 
         //Extract delays and fill the two private transition time vectors
         //according to the given Spice file at fileLocation

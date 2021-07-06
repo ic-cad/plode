@@ -64,6 +64,8 @@ void MainWindow::on_convertButton_clicked()
 
     }
     else{
+
+
         std::cout << "FILE NAME:" << ui->textEdit->toPlainText().toUtf8().constData() << std::endl;
         CurrentCircuit::circ.fillFromVerilogFile(ui->textEdit->toPlainText().toUtf8().constData());
         char buffer[256];
@@ -668,16 +670,23 @@ void MainWindow::on_compareResultsButton_clicked()
     std::string dirname{cwd};
 
     std::string expectedResultFilePath = ui->expectedResultFilePath->toPlainText().toUtf8().constData();
-    std::string actualResultFilePath =  ui->logicResultFilePath->toPlainText().toUtf8().constData();
+    std::string actualResultFilePath =  ui->plodeResultsFilePath->toPlainText().toUtf8().constData();
+
+    if(actualResultFilePath.size() == 0)
+    {
+       actualResultFilePath =  ui->logicResultFilePath->toPlainText().toUtf8().constData();
+    }
 
     std::string comparisonResultFilePath = dirname + "/ComparisonFiles/" + CurrentCircuit::circ.circuitName + "_resultComparisonFile.txt";
-    int wrongValues = PLODELib::getDelayParser().CompareActualWithExpected(actualResultFilePath, expectedResultFilePath, comparisonResultFilePath);
+    std::vector<int> values = PLODELib::getDelayParser().CompareActualWithExpected(actualResultFilePath, expectedResultFilePath, comparisonResultFilePath);
+    int totalValues = values[0];
+    int wrongValues = values[1];
 
     ui->wrongResultValue->setText(std::to_string(wrongValues).c_str());
     ui->wrongResultValue->setReadOnly(true);
-    ui->correctResultValue->setText(std::to_string(PLODELib::getDelayParser().GetAllInputTransitionTimes().size() - 1 - wrongValues).c_str());
+    ui->correctResultValue->setText(std::to_string(totalValues - wrongValues).c_str());
     ui->correctResultValue->setReadOnly(true);
-    ui->totalResultValue->setText(std::to_string(PLODELib::getDelayParser().GetAllInputTransitionTimes().size() - 1).c_str());
+    ui->totalResultValue->setText(std::to_string(totalValues).c_str());
     ui->totalResultValue->setReadOnly(true);
 
     ui->resultDifferenceFilePath->setText(comparisonResultFilePath.c_str());
@@ -776,5 +785,14 @@ void MainWindow::on_openVerilog_clicked()
 
     if(!file_name.isEmpty()){
         ui->sourceVerilog->setText(file_name);
+    }
+}
+
+void MainWindow::on_plodeResultFileBrowse_clicked()
+{
+    QString file_name = QFileDialog::getOpenFileName(this,"Choose file","C://","Text files (*.txt)");
+
+    if(!file_name.isEmpty()){
+        ui->plodeResultsFilePath->setText(file_name);
     }
 }
